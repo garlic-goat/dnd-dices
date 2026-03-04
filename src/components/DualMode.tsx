@@ -15,6 +15,9 @@ export default function DualMode({ onClose }: DualModeProps) {
   const [rightResults, setRightResults] = useState<number[]>([]);
   const [threshold, setThreshold] = useState<number>(10);
 
+  const [attackBonus, setAttackBonus] = useState<number>(0);
+  const [damageBonus, setDamageBonus] = useState<number>(0);
+
   const diceTypes = [2, 3, 4, 6, 8, 10, 12, 20, 100];
 
   const rollDice = () => {
@@ -40,14 +43,16 @@ export default function DualMode({ onClose }: DualModeProps) {
   const calculateDamage = () => {
     return rightResults.reduce((sum, rightVal, index) => {
       const leftVal = leftResults[index];
-      if (leftVal >= threshold) {
-        return sum + rightVal;
+      // Add attack bonus to check against threshold
+      if (leftVal + attackBonus >= threshold) {
+        // Add damage bonus to the result (minimum 0 damage)
+        return sum + Math.max(0, rightVal + damageBonus);
       }
       return sum;
     }, 0);
   };
 
-  const leftTotal = leftResults.reduce((a, b) => a + b, 0);
+  const leftTotal = leftResults.reduce((a, b) => a + b, 0) + (leftResults.length * attackBonus);
   const damageTotal = calculateDamage();
 
   return (
@@ -77,11 +82,10 @@ export default function DualMode({ onClose }: DualModeProps) {
                   <button
                     key={type}
                     onClick={() => setLeftDiceType(type)}
-                    className={`py-3 px-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 ${
-                      leftDiceType === type
-                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
-                        : 'bg-slate-700 text-white hover:bg-slate-600'
-                    }`}
+                    className={`py-3 px-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 ${leftDiceType === type
+                      ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-slate-700 text-white hover:bg-slate-600'
+                      }`}
                   >
                     d{type}
                   </button>
@@ -98,11 +102,10 @@ export default function DualMode({ onClose }: DualModeProps) {
                   <button
                     key={type}
                     onClick={() => setRightDiceType(type)}
-                    className={`py-3 px-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 ${
-                      rightDiceType === type
-                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'
-                        : 'bg-slate-700 text-white hover:bg-slate-600'
-                    }`}
+                    className={`py-3 px-4 rounded-lg font-bold text-lg transition-all transform hover:scale-105 ${rightDiceType === type
+                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'
+                      : 'bg-slate-700 text-white hover:bg-slate-600'
+                      }`}
                   >
                     d{type}
                   </button>
@@ -121,11 +124,10 @@ export default function DualMode({ onClose }: DualModeProps) {
                   <button
                     key={count}
                     onClick={() => setDiceCount(count)}
-                    className={`py-3 px-4 rounded-lg font-bold text-xl transition-all transform hover:scale-105 ${
-                      diceCount === count
-                        ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/50'
-                        : 'bg-slate-700 text-white hover:bg-slate-600'
-                    }`}
+                    className={`py-3 px-4 rounded-lg font-bold text-xl transition-all transform hover:scale-105 ${diceCount === count
+                      ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/50'
+                      : 'bg-slate-700 text-white hover:bg-slate-600'
+                      }`}
                   >
                     {count}
                   </button>
@@ -150,14 +152,37 @@ export default function DualMode({ onClose }: DualModeProps) {
             </div>
           </div>
 
+          <div>
+            <label className="block text-white font-semibold mb-3 text-lg">
+              Attack Bonus (to each die)
+            </label>
+            <input
+              type="number"
+              value={attackBonus}
+              onChange={(e) => setAttackBonus(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-amber-500 focus:outline-none transition-colors text-lg font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-white font-semibold mb-3 text-lg">
+              Damage Bonus (to each die)
+            </label>
+            <input
+              type="number"
+              value={damageBonus}
+              onChange={(e) => setDamageBonus(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-amber-500 focus:outline-none transition-colors text-lg font-semibold"
+            />
+          </div>
+
           <button
             onClick={rollDice}
             disabled={isRolling}
-            className={`w-full py-4 rounded-xl font-bold text-xl transition-all transform mb-8 ${
-              isRolling
-                ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:from-amber-400 hover:to-orange-400 hover:scale-[1.02] shadow-lg shadow-amber-500/30'
-            }`}
+            className={`w-full py-4 rounded-xl font-bold text-xl transition-all transform mb-8 ${isRolling
+              ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:from-amber-400 hover:to-orange-400 hover:scale-[1.02] shadow-lg shadow-amber-500/30'
+              }`}
           >
             {isRolling ? 'Rolling...' : `Roll ${diceCount} Dice`}
           </button>
@@ -169,7 +194,7 @@ export default function DualMode({ onClose }: DualModeProps) {
                 <DiceRoller
                   diceType={leftDiceType}
                   diceCount={diceCount}
-                  results={leftResults}
+                  results={leftResults.map(val => val + attackBonus)}
                   isRolling={isRolling}
                 />
                 {leftResults.length > 0 && !isRolling && (
@@ -185,7 +210,7 @@ export default function DualMode({ onClose }: DualModeProps) {
                 <DiceRoller
                   diceType={rightDiceType}
                   diceCount={diceCount}
-                  results={rightResults}
+                  results={rightResults.map(val => Math.max(0, val + damageBonus))}
                   isRolling={isRolling}
                 />
                 {rightResults.length > 0 && !isRolling && (
@@ -196,13 +221,14 @@ export default function DualMode({ onClose }: DualModeProps) {
                     </div>
                     <div className="text-xs text-slate-400 space-y-1">
                       {rightResults.map((right, i) => {
-                        const left = leftResults[i];
-                        const applied = left >= threshold ? right : 0;
+                        const finalAttack = leftResults[i] + attackBonus;
+                        const finalDamage = Math.max(0, right + damageBonus);
+                        const applied = finalAttack >= threshold ? finalDamage : 0;
                         return (
                           <div key={i} className="flex justify-between">
-                            <span>Dice {i + 1}:</span>
+                            <span>Dice {i + 1} (Atk: {finalAttack}):</span>
                             <span className={applied > 0 ? 'text-blue-300' : 'text-slate-500'}>
-                              {applied > 0 ? `${right}` : '-'}
+                              {applied > 0 ? `${finalDamage}` : '-'}
                             </span>
                           </div>
                         );
